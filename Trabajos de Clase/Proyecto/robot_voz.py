@@ -1,8 +1,6 @@
 """
-🤖 Robot con Control de Voz por IA (Red Neuronal / NLP) — Pygame + Inteligencia Artificial
+Robot con Control de Voz por IA (Red Neuronal / NLP) — Pygame + Inteligencia Artificial
 =======================================================================================
-Este código utiliza un clasificador de Machine Learning (TF-IDF + MLP/LogReg) para
-entender la INTENCIÓN del usuario mediante sinónimos y lenguaje natural.
 """
 
 import math
@@ -106,24 +104,30 @@ class IACommandClassifier:
             "mueve_izquierda": [
                 "mueve izquierda",
                 "mover izquierda",
-                "avanza izquierda",
+                "muévete hacia la izquierda",
+                "muévete a la izquierda",
+                "avanza hacia la izquierda",
                 "gira y mueve izquierda",
                 "gira a la izquierda y avanza",
                 "cruza a la izquierda",
+                "desplázate a la izquierda"
             ],
             "mueve_derecha": [
                 "mueve derecha",
                 "mover derecha",
-                "avanza derecha",
+                "muévete hacia la derecha",
+                "muévete a la derecha",
+                "avanza hacia la derecha",
                 "gira y mueve derecha",
                 "gira a la derecha y avanza",
                 "cruza a la derecha",
+                "desplázate a la derecha"
             ],
         }
         self._train()
 
     def _train(self):
-        """Compila los datos y entrena el modelo matemático."""
+        #Compila los datos y entrena el modelo matemático."""
         X_texts = []
         y_labels = []
 
@@ -150,8 +154,8 @@ class IACommandClassifier:
         probabilities = self.model.predict_proba(X_vec)
         max_prob = max(probabilities[0])
 
-        # Umbral de confianza: Si la IA no está al menos 40% segura, prefiere no adivinar
-        if max_prob < 0.38:
+        # Umbral de confianza: Si la IA no está al menos 35% segura, prefiere no adivinar
+        if max_prob < 0.35:
             return "desconocido", max_prob
 
         return prediction, max_prob
@@ -210,47 +214,40 @@ class Robot:
 # 4. Enrutador de Intenciones
 # ---------------------------------------------------------------------------
 def execute_ia_intent(intent: str, robot: Robot) -> str:
-    """Traspasa la predicción de la IA en acciones mecánicas dentro del
 
-    juego.
-    """
     if intent == "mueve_izquierda":
         ok = robot.turn_and_move_left()
         return (
-            "↖ IA: Girar + Avanzar Izquierda" + ("" if ok else " (Límite mapa)")
+            "↖ Cort: Girar + Avanzar Izquierda" + ("" if ok else " (Límite mapa)")
         )
 
     elif intent == "mueve_derecha":
         ok = robot.turn_and_move_right()
-        return "↗ IA: Girar + Avanzar Derecha" + ("" if ok else " (Límite mapa)")
+        return "↗ Cort: Girar + Avanzar Derecha" + ("" if ok else " (Límite mapa)")
 
     elif intent == "adelante":
         ok = robot.move_forward()
-        return "⬆ IA: Adelante" + ("" if ok else " (Límite mapa)")
+        return "⬆ Cort: Adelante" + ("" if ok else " (Límite mapa)")
 
     elif intent == "atras":
         ok = robot.move_backward()
-        return "⬇ IA: Atrás" + ("" if ok else " (Límite mapa)")
+        return "⬇ Cort: Atrás" + ("" if ok else " (Límite mapa)")
 
     elif intent == "izquierda":
         robot.turn_left()
-        return "↺ IA: Rotación Izquierda (In situ)"
+        return "↺ Cort: Rotación Izquierda (In situ)"
 
     elif intent == "derecha":
         robot.turn_right()
-        return "↻ IA: Rotación Derecha (In situ)"
+        return "↻ Cort: Rotación Derecha (In situ)"
 
-    return "❓ IA: Comando no comprendido o inseguro"
+    return " Cortana: Comando no comprendido o inseguro"
 
 
 # ---------------------------------------------------------------------------
 # 5. Controlador de voz por hilos (Multithreading)
 # ---------------------------------------------------------------------------
 class VoiceController:
-    """Captura el micrófono en segundo plano para evitar que Pygame se congele
-
-    mientras la API de Google procesa la onda de audio.
-    """
 
     def __init__(self):
         self.recognizer = sr.Recognizer()
@@ -265,7 +262,7 @@ class VoiceController:
                 # Calibración inicial para ignorar el ruido ambiental (ventiladores, clics)
                 self.recognizer.energy_threshold = 300
                 self.recognizer.adjust_for_ambient_noise(src, duration=1.5)
-                self.status = "🎤 Escuchando... Di un comando (IA activa)"
+                self.status = "🎤 Escuchando... Di un comando (Cortana conectada)"
                 self.ready = True
 
                 while self.running:
@@ -281,15 +278,15 @@ class VoiceController:
                             audio, language="es-ES"
                         )
                         self.commands.append(text)
-                        self.status = f'✅ Texto captado: "{text}"'
+                        self.status = f'✅ Comando aceptado "{text}"'
                     except sr.WaitTimeoutError:
-                        self.status = "🎤 Escuchando... Di un comando"
+                        self.status = "🎤 Escuchando..¿Qué debería hacer?"
                     except sr.UnknownValueError:
-                        self.status = "🔇 Sonido extraño. Intenta de nuevo"
+                        self.status = "🔇 Las interferencias de la comunicación no nos dejan conectarnos, por favor vuelva a decir el comando señor"
                     except sr.RequestError as e:
-                        self.status = f"❌ Error de conexión: {e}"
+                        self.status = f"❌ Nos destruyeron las comunicaciones: {e}"
         except OSError as e:
-            self.status = f"❌ Hardware de micrófono no hallado: {e}"
+            self.status = f"❌ Ya no existen comunicaciones, intente de nuevo: {e}"
             self.ready = False
 
 
@@ -297,10 +294,7 @@ class VoiceController:
 # 6. Funciones Gráficas (Renderizado de interfaz)
 # ---------------------------------------------------------------------------
 def draw_robot(surf: pygame.Surface, robot: Robot):
-    """Maneja el cálculo trigonométrico para dibujar el chasis y la dirección
 
-    del robot.
-    """
     # Dibujar rastro difuminado
     for i, (tx, ty) in enumerate(robot.trail):
         alpha = int(80 * (i + 1) / len(robot.trail)) if robot.trail else 80
@@ -471,14 +465,14 @@ def main():
     # NUEVO: Instanciar y entrenar la Inteligencia Artificial al arrancar
     print("Entrenando cerebro NLP...")
     brain = IACommandClassifier()
-    print("¡IA lista y cargada con éxito!")
+    print("¡Cortana está lista y cargada con éxito!")
 
     # Desplegar el hilo para la escucha asíncrona del micrófono
     voice_thread = threading.Thread(target=voice.listen_loop, daemon=True)
     voice_thread.start()
 
     last_action = "Esperando entrada de voz o teclado..."
-    ia_info = "IA Predictora: En reposo"
+    ia_info = "Cortana : En reposo"
 
     # Caché gráfico de la cuadrícula para optimizar FPS
     grid_surf = pygame.Surface((WIN_W, GRID_SIZE * CELL_SIZE))
@@ -527,7 +521,7 @@ def main():
             intent, confidence = brain.predict(raw_text)
 
             # 2. Generamos métricas para mostrar en la interfaz
-            ia_info = f"IA deducción: '{intent}' | Certeza matemática: {confidence * 100:.1f}%"
+            ia_info = f"Cortana deducción: '{intent}' | Certeza matemática: {confidence * 100:.1f}%"
 
             # 3. Mandamos el comando deducido al ejecutor físico del Robot
             last_action = execute_ia_intent(intent, robot)
